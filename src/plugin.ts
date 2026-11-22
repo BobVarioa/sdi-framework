@@ -122,7 +122,7 @@ export function sdiPlugin(): RolldownPlugin {
 					},
 				}).visit(program);
 
-				if (!importsReflectMetadata) {
+				if (!importsReflectMetadata && importMap.size > 0) {
 					s.appendLeft(0, `import "reflect-metadata/lite";\n`);
 				}
 

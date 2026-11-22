@@ -35,12 +35,18 @@ export function sdiPlugin(): RolldownPlugin {
 					},
 					ClassDeclaration(node) {
 						for (const decorator of node.decorators) {
-							if (decorator.expression.type != "Identifier") continue;
 							let serviceType;
-							if (decorator.expression.name == importMap.get("Controller")) {
-								serviceType = "Controller";
-							} else if (decorator.expression.name == importMap.get("Service")) {
+							if (
+								decorator.expression.type == "Identifier" &&
+								decorator.expression.name == importMap.get("Service")
+							) {
 								serviceType = "Service";
+							} else if (
+								decorator.expression.type == "CallExpression" &&
+								decorator.expression.callee.type == "Identifier" &&
+								decorator.expression.callee.name == importMap.get("Controller")
+							) {
+								serviceType = "Controller";
 							} else {
 								continue;
 							}

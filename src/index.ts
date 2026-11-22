@@ -54,46 +54,48 @@ export function Service<T extends { new (...args: any[]): {} }>(serviceConstruct
 	return mixin;
 }
 
-export function Controller<T extends { new (...args: any[]): {} }>(serviceConstructor: T) {
-	Reflect.defineMetadata("sdi:controller", true, serviceConstructor);
+export function Controller(baseRoute: string = "") {
+	return function <T extends { new (...args: any[]): {} }>(serviceConstructor: T) {
+		Reflect.defineMetadata("sdi:controller", true, serviceConstructor);
 
-	const mixin = class extends serviceConstructor {
-		constructor(...args: any[]) {
-			super(...construct(args));
+		const mixin = class extends serviceConstructor {
+			constructor(...args: any[]) {
+				super(...construct(args));
 
-			const ctx: HTTPServerContext = args[0];
+				const ctx: HTTPServerContext = args[0];
 
-			const routes: HTTPRoute[] = Reflect.getMetadata("sdi:routes", serviceConstructor) ?? [];
+				const routes: HTTPRoute[] = Reflect.getMetadata("sdi:routes", serviceConstructor) ?? [];
 
-			for (const route of routes) {
-				ctx.routes.push({
-					method: route.method,
-					path: route.path,
-					handler: route.handler.bind(this),
-				});
+				for (const route of routes) {
+					ctx.routes.push({
+						method: route.method,
+						path: baseRoute + route.path,
+						handler: route.handler.bind(this),
+					});
+				}
 			}
-		}
-	};
+		};
 
-	if (!Reflect.hasMetadata("sdi:serviceKey", mixin)) {
-		Reflect.defineMetadata("sdi:serviceKey", serviceConstructor.name, mixin);
-	}
-
-	const construct = (args: any[]) => {
-		const params = Reflect.getMetadata("sdi:params", serviceConstructor) ?? [];
-
-		const ctx: Context = args[0];
-
-		const obj: any[] = [];
-
-		for (const param of params) {
-			obj.push(ctx.container.construct(param, ctx));
+		if (!Reflect.hasMetadata("sdi:serviceKey", mixin)) {
+			Reflect.defineMetadata("sdi:serviceKey", serviceConstructor.name, mixin);
 		}
 
-		return obj;
-	};
+		const construct = (args: any[]) => {
+			const params = Reflect.getMetadata("sdi:params", serviceConstructor) ?? [];
 
-	return mixin;
+			const ctx: Context = args[0];
+
+			const obj: any[] = [];
+
+			for (const param of params) {
+				obj.push(ctx.container.construct(param, ctx));
+			}
+
+			return obj;
+		};
+
+		return mixin;
+	};
 }
 
 export function Route(method: HTTPMethod, path: string) {
@@ -145,7 +147,7 @@ export class Container {
 		const service = this.#map.get(key);
 
 		if (service == undefined) {
-			throw new Error(`Attempted to construct non-existent service "${key}".`)
+			throw new Error(`Attempted to construct non-existent service "${key}".`);
 		}
 
 		ctx ??= {

@@ -1,6 +1,6 @@
 import { Container, Controller, Route } from "@bobvarioa/sdi-framework";
 
-@Controller
+@Controller()
 class MainController {
 	@Route("GET", "/*")
 	index(req: Request): Response {
